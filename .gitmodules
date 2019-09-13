@@ -1,0 +1,3 @@
+[submodule "SimpleHttpClient"]
+	path = SimpleHttpClient
+	url = https://github.com/Feng-Bu-Jue/SimpleHttpClient.git
