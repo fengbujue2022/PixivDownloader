@@ -3,6 +3,12 @@
   <PropertyGroup>
     <OutputType>Exe</OutputType>
     <TargetFramework>netcoreapp2.1</TargetFramework>
+    <LangVersion>7.3</LangVersion>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\EasyHttpClient-NetStandard\src\EasyHttpClient\EasyHttpClient.csproj" />
+    <ProjectReference Include="..\SimpleHttpClient\SimpleHttpClient\SimpleHttpClient.csproj" />
+  </ItemGroup>
 
 </Project>
