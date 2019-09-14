@@ -11,6 +11,7 @@ namespace PivixDownloader.ApiClient
     {
         public PivixApiClientFactory() : base()
         {
+            this.Config.Host = new Uri("https://app-api.pixiv.net");
             this.Config.HttpClientProvider = new PivixHttpClientProvier();
             this.Config.HttpClientSettings.OAuth2ClientHandler = new PivixOAuthHandler(
                 "https://oauth.secure.pixiv.net/",
@@ -19,8 +20,9 @@ namespace PivixDownloader.ApiClient
                     ClientId = "MOBrBDS8blbauoSck0ZfDbtuzpyT",
                     ClientSecret = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj",
                     GrantType = "password",
+                    //DeviceToken = "6b466a56becc789aa8821ecc8f607d3c",
                     Username = "",
-                    Password = ""
+                    Password = "",
                 }
             );
         }

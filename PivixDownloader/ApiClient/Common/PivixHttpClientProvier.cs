@@ -27,17 +27,19 @@ namespace PivixDownloader.ApiClient.Common
             return _httpClient;
         }
 
-        public HttpMessageInvoker GetClientInernal(HttpClientSettings clientSetting, params DelegatingHandler[] handlers)
+        private HttpMessageInvoker GetClientInernal(HttpClientSettings clientSetting, params DelegatingHandler[] handlers)
         {
             var defaultHandlers = new DelegatingHandler[] {
                 new PivixHeaderValueHandler()
             };
             handlers = handlers == null ? defaultHandlers : handlers.Concat(defaultHandlers).ToArray();
-
+            
             var httpClient = SimpleHttpClient.HttpClientFactory.Create((handler) =>
             {
                 handler.EndPointProvider = new PivixEndPointProvider();
             }, handlers);
+            
+            //var httpClient = HttpClientFactory.Create(handlers);
 
             return httpClient;
         }

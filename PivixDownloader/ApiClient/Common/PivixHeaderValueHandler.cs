@@ -11,6 +11,7 @@ namespace PivixDownloader.ApiClient.Common
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, System.Threading.CancellationToken cancellationToken)
         {
             request.Headers.Add("User-Agent", "PixivIOSApp/5.8.0");
+            request.Headers.Add("Accept-Language", "zh-CN");
             request.Headers.Add("referer", "https://app-api.pixiv.net/");
             return base.SendAsync(request, cancellationToken);
         }

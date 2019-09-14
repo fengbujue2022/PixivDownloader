@@ -1,7 +1,9 @@
 ﻿using EasyHttpClient;
 using EasyHttpClient.Attributes;
+using EasyHttpClient.Attributes.Parameter;
 using EasyHttpClient.OAuth2;
 using Newtonsoft.Json;
+using PivixDownloader.ApiClient.Common;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -25,19 +27,19 @@ namespace PivixDownloader.ApiClient.OAuth
 
         public class PivixOAuthRequest
         {
-            [JsonProperty("client_id")]
+            [HttpAlias("client_id")]
             public string ClientId { get; set; }
-            [JsonProperty("client_secret")]
+            [HttpAlias("client_secret")]
             public string ClientSecret { get; set; }
-            [JsonProperty("Username")]
+            [HttpAlias("username")]
             public string Username { get; set; }
-            [JsonProperty("password")]
+            [HttpAlias("password")]
             public string Password { get; set; }
-            [JsonProperty("device_token")]
+            [HttpAlias("device_token")]
             public string DeviceToken { get; set; }
 
-            [JsonIgnore]
-            [JsonProperty("grant_type")]
+            [HttpIgnore]
+            [HttpAlias("grant_type")]
             public string GrantType { get; set; }
         }
 
@@ -60,7 +62,7 @@ namespace PivixDownloader.ApiClient.OAuth
 
         private readonly PivixOAuthRequest  _request;
         public PivixOAuthHandler(string loginHost, PivixOAuthRequest request)
-            : this(loginHost, "oauth2/token", request)
+            : this(loginHost, "auth/token", request)
         {
 
         }
@@ -69,6 +71,7 @@ namespace PivixDownloader.ApiClient.OAuth
             this._request = request;
             this._oAuth2TokenPath = oAuth2TokenPath.Trim('/');
             var factory = new EasyHttpClientFactory();
+            factory.Config.HttpClientProvider = new PivixHttpClientProvier();
             _oAuth2Api = factory.Create<IOAuth2Api>(loginHost);
         }
 
@@ -76,14 +79,8 @@ namespace PivixDownloader.ApiClient.OAuth
         {
             if (oAuthResponse == null)
             {
-                if (authTokenTask == null
-                     || authTokenTask.IsCanceled
-                     || authTokenTask.IsCompleted
-                     || authTokenTask.IsFaulted)
-                {
-                    authTokenTask = _oAuth2Api.AuthToken(this._oAuth2TokenPath, this._request, this._request.GrantType);
-                }
-                var result = await authTokenTask;
+                var result = await TaskWhenEnd(authTokenTask, () => _oAuth2Api.AuthToken(this._oAuth2TokenPath, this._request, this._request.GrantType));
+
                 if (result != null && result.IsSuccessStatusCode)
                 {
                     oAuthResponse = result.Content;
@@ -96,22 +93,13 @@ namespace PivixDownloader.ApiClient.OAuth
             }
         }
 
-
-
         public async Task<bool> RefreshAccessToken(HttpRequestMessage originalHttpRequestMessage)
         {
             var canRefreshToken = oAuthResponse != null && !string.IsNullOrWhiteSpace(oAuthResponse.RefreshToken);
             IHttpResult<PivixOAuthResponse> result = null;
             if (canRefreshToken)
             {
-                if (refreshTokenTask == null
-                     || refreshTokenTask.IsCanceled
-                     || refreshTokenTask.IsCompleted
-                     || refreshTokenTask.IsFaulted)
-                {
-                    refreshTokenTask = _oAuth2Api.RefreshToken(this._oAuth2TokenPath, this._request, oAuthResponse.RefreshToken, "refresh_token");
-                }
-                result = await refreshTokenTask;
+                result = await TaskWhenEnd(refreshTokenTask, () => _oAuth2Api.RefreshToken(this._oAuth2TokenPath, this._request, oAuthResponse.RefreshToken, "refresh_token"));
 
                 if (result != null && result.IsSuccessStatusCode)
                 {
@@ -120,14 +108,8 @@ namespace PivixDownloader.ApiClient.OAuth
             }
             if (!canRefreshToken || (result != null && result.StatusCode == HttpStatusCode.Unauthorized))
             {
-                if (authTokenTask == null
-                     || authTokenTask.IsCanceled
-                     || authTokenTask.IsCompleted
-                     || authTokenTask.IsFaulted)
-                {
-                    authTokenTask = _oAuth2Api.AuthToken(this._oAuth2TokenPath, this._request, this._request.GrantType);
-                }
-                result = await authTokenTask;
+                result = await TaskWhenEnd(authTokenTask, () => _oAuth2Api.AuthToken(this._oAuth2TokenPath, this._request, this._request.GrantType));
+
                 if (result != null && result.IsSuccessStatusCode)
                 {
                     oAuthResponse = result.Content;
@@ -142,6 +124,15 @@ namespace PivixDownloader.ApiClient.OAuth
             {
                 return false;
             }
+        }
+
+        private  Task<T> TaskWhenEnd<T>(Task<T> task,Func<Task<T>> valueFactory)
+        {
+            if (task == null || task.IsCanceled || task.IsCompleted || task.IsFaulted)
+            {
+                task = valueFactory();
+            }
+            return task;
         }
     }
 }
