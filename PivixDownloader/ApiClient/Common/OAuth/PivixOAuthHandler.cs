@@ -17,6 +17,12 @@ namespace PivixDownloader.ApiClient.OAuth
     public class PivixOAuthHandler : IOAuth2ClientHandler
     {
 
+        public class PivixOAuthProtocal<TR>
+        {
+            [JsonProperty("response")]
+            public TR Response { get; set; }
+        }
+
         public class PivixOAuthResponse
         {
             [JsonProperty("access_token")]
@@ -38,6 +44,9 @@ namespace PivixDownloader.ApiClient.OAuth
             [HttpAlias("device_token")]
             public string DeviceToken { get; set; }
 
+            [HttpAlias("get_secure_url")]
+            public string GetSecureUrl { get; set; }
+
             [HttpIgnore]
             [HttpAlias("grant_type")]
             public string GrantType { get; set; }
@@ -47,17 +56,17 @@ namespace PivixDownloader.ApiClient.OAuth
         {
             [Route("{oAuth2TokenPath}")]
             [HttpPost]
-            Task<IHttpResult<PivixOAuthResponse>> AuthToken([PathParam]string oAuth2TokenPath, [FormBody]PivixOAuthRequest request, [FormBody]string grant_type);
+            Task<IHttpResult<PivixOAuthProtocal<PivixOAuthResponse>>> AuthToken([PathParam]string oAuth2TokenPath, [FormBody]PivixOAuthRequest request, [FormBody]string grant_type);
 
             [Route("{oAuth2TokenPath}")]
             [HttpPost]
-            Task<IHttpResult<PivixOAuthResponse>> RefreshToken([PathParam]string oAuth2TokenPath, [FormBody]PivixOAuthRequest request, [FormBody]string refresh_token, [FormBody]string grant_type);
+            Task<IHttpResult<PivixOAuthProtocal<PivixOAuthResponse>>> RefreshToken([PathParam]string oAuth2TokenPath, [FormBody]PivixOAuthRequest request, [FormBody]string refresh_token, [FormBody]string grant_type);
         }
 
         private readonly IOAuth2Api _oAuth2Api;
         private readonly string _oAuth2TokenPath;
-        private Task<IHttpResult<PivixOAuthResponse>> authTokenTask;
-        private Task<IHttpResult<PivixOAuthResponse>> refreshTokenTask;
+        private Task<IHttpResult<PivixOAuthProtocal<PivixOAuthResponse>>> authTokenTask;
+        private Task<IHttpResult<PivixOAuthProtocal<PivixOAuthResponse>>> refreshTokenTask;
         private PivixOAuthResponse oAuthResponse;
 
         private readonly PivixOAuthRequest  _request;
@@ -83,7 +92,7 @@ namespace PivixDownloader.ApiClient.OAuth
 
                 if (result != null && result.IsSuccessStatusCode)
                 {
-                    oAuthResponse = result.Content;
+                    oAuthResponse = result.Content?.Response;
                 }
             }
 
@@ -96,14 +105,14 @@ namespace PivixDownloader.ApiClient.OAuth
         public async Task<bool> RefreshAccessToken(HttpRequestMessage originalHttpRequestMessage)
         {
             var canRefreshToken = oAuthResponse != null && !string.IsNullOrWhiteSpace(oAuthResponse.RefreshToken);
-            IHttpResult<PivixOAuthResponse> result = null;
+            IHttpResult<PivixOAuthProtocal<PivixOAuthResponse>> result = null;
             if (canRefreshToken)
             {
                 result = await TaskWhenEnd(refreshTokenTask, () => _oAuth2Api.RefreshToken(this._oAuth2TokenPath, this._request, oAuthResponse.RefreshToken, "refresh_token"));
 
                 if (result != null && result.IsSuccessStatusCode)
                 {
-                    oAuthResponse = result.Content;
+                    oAuthResponse = result.Content.Response;
                 }
             }
             if (!canRefreshToken || (result != null && result.StatusCode == HttpStatusCode.Unauthorized))
@@ -112,7 +121,7 @@ namespace PivixDownloader.ApiClient.OAuth
 
                 if (result != null && result.IsSuccessStatusCode)
                 {
-                    oAuthResponse = result.Content;
+                    oAuthResponse = result.Content.Response;
                 }
             }
             if (oAuthResponse != null)

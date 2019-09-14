@@ -9,7 +9,7 @@ namespace PivixDownloader.ApiClient
 {
     public class PivixApiClientFactory : EasyHttpClientFactory
     {
-        public PivixApiClientFactory() : base()
+        public PivixApiClientFactory(string username,string password) : base()
         {
             this.Config.Host = new Uri("https://app-api.pixiv.net");
             this.Config.HttpClientProvider = new PivixHttpClientProvier();
@@ -20,9 +20,10 @@ namespace PivixDownloader.ApiClient
                     ClientId = "MOBrBDS8blbauoSck0ZfDbtuzpyT",
                     ClientSecret = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj",
                     GrantType = "password",
+                    GetSecureUrl= "1",
                     //DeviceToken = "6b466a56becc789aa8821ecc8f607d3c",
-                    Username = "",
-                    Password = "",
+                    Username = username,
+                    Password = password,
                 }
             );
         }
