@@ -7,10 +7,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.Management" Version="4.5.0" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\EasyHttpClient-NetStandard\src\EasyHttpClient\EasyHttpClient.csproj" />
     <ProjectReference Include="..\SimpleHttpClient\SimpleHttpClient\SimpleHttpClient.csproj" />
   </ItemGroup>

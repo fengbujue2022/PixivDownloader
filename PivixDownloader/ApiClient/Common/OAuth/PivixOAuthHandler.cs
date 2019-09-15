@@ -16,7 +16,6 @@ namespace PivixDownloader.ApiClient.OAuth
 {
     public class PivixOAuthHandler : IOAuth2ClientHandler
     {
-
         public class PivixOAuthProtocal<TR>
         {
             [JsonProperty("response")]
