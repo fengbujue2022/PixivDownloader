@@ -4,9 +4,9 @@ using System.Collections.Generic;
 using System.Net;
 using System.Text;
 
-namespace PivixDownloader.ApiClient.Common
+namespace PixivDownloader.ApiClient.Common
 {
-    public class PivixEndPointProvider : EndPointProvider
+    public class PixivEndPointProvider : EndPointProvider
     {
         private readonly IDictionary<string, string> DNSMap = new Dictionary<string, string>()
         {

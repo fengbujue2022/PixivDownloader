@@ -5,9 +5,9 @@ using System.Linq;
 using System.Net.Http;
 using System.Text;
 
-namespace PivixDownloader.ApiClient.Common
+namespace PixivDownloader.ApiClient.Common
 {
-    public class PivixHttpClientProvier : IHttpClientProvider
+    public class PixivHttpClientProvier : IHttpClientProvider
     {
         private object syncObject = new object();
         private HttpMessageInvoker _httpClient;
@@ -30,13 +30,13 @@ namespace PivixDownloader.ApiClient.Common
         private HttpMessageInvoker GetClientInernal(HttpClientSettings clientSetting, params DelegatingHandler[] handlers)
         {
             var defaultHandlers = new DelegatingHandler[] {
-                new PivixHeaderValueHandler()
+                new PixivHeaderValueHandler()
             };
             handlers = handlers == null ? defaultHandlers : handlers.Concat(defaultHandlers).ToArray();
             
             var httpClient = SimpleHttpClient.HttpClientFactory.Create((handler) =>
             {
-                handler.EndPointProvider = new PivixEndPointProvider();
+                handler.EndPointProvider = new PixivEndPointProvider();
             }, handlers);
             
             //var httpClient = HttpClientFactory.Create(handlers);

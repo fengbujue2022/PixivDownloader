@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace PivixDownloader.ApiClient.Response
+namespace PixivDownloader.ApiClient.Response
 {
     public class IllustsListingResponse
     {

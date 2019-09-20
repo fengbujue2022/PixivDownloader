@@ -4,11 +4,11 @@ using System.Text;
 using System.Threading.Tasks;
 using EasyHttpClient;
 using EasyHttpClient.Attributes;
-using PivixDownloader.ApiClient.Response;
+using PixivDownloader.ApiClient.Response;
 
-namespace PivixDownloader.ApiClient.Api
+namespace PixivDownloader.ApiClient.Api
 {
-    public interface IPivixApiClient
+    public interface IPixivApiClient
     {
         [HttpGet]
         [Authorize]

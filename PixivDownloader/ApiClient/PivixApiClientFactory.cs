@@ -1,21 +1,21 @@
 ﻿using EasyHttpClient;
-using PivixDownloader.ApiClient.Common;
-using PivixDownloader.ApiClient.OAuth;
+using PixivDownloader.ApiClient.Common;
+using PixivDownloader.ApiClient.OAuth;
 using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace PivixDownloader.ApiClient
+namespace PixivDownloader.ApiClient
 {
-    public class PivixApiClientFactory : EasyHttpClientFactory
+    public class PixivApiClientFactory : EasyHttpClientFactory
     {
-        public PivixApiClientFactory(string username,string password) : base()
+        public PixivApiClientFactory(string username,string password) : base()
         {
             this.Config.Host = new Uri("https://app-api.pixiv.net");
-            this.Config.HttpClientProvider = new PivixHttpClientProvier();
-            this.Config.HttpClientSettings.OAuth2ClientHandler = new PivixOAuthHandler(
+            this.Config.HttpClientProvider = new PixivHttpClientProvier();
+            this.Config.HttpClientSettings.OAuth2ClientHandler = new PixivOAuthHandler(
                 "https://oauth.secure.pixiv.net/",
-                new PivixOAuthHandler.PivixOAuthRequest
+                new PixivOAuthHandler.PixivOAuthRequest
                 {
                     ClientId = "MOBrBDS8blbauoSck0ZfDbtuzpyT",
                     ClientSecret = "lsACyCD94FhDUtGTXi3QzcFE2uU1hqtDaKeqrdwj",

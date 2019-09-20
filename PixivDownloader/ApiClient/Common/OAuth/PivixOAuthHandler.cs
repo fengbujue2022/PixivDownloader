@@ -3,7 +3,7 @@ using EasyHttpClient.Attributes;
 using EasyHttpClient.Attributes.Parameter;
 using EasyHttpClient.OAuth2;
 using Newtonsoft.Json;
-using PivixDownloader.ApiClient.Common;
+using PixivDownloader.ApiClient.Common;
 using System;
 using System.Collections.Generic;
 using System.Net;
@@ -12,17 +12,17 @@ using System.Net.Http.Headers;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace PivixDownloader.ApiClient.OAuth
+namespace PixivDownloader.ApiClient.OAuth
 {
-    public class PivixOAuthHandler : IOAuth2ClientHandler
+    public class PixivOAuthHandler : IOAuth2ClientHandler
     {
-        public class PivixOAuthProtocal<TR>
+        public class PixivOAuthProtocal<TR>
         {
             [JsonProperty("response")]
             public TR Response { get; set; }
         }
 
-        public class PivixOAuthResponse
+        public class PixivOAuthResponse
         {
             [JsonProperty("access_token")]
             public string AccessToken { get; set; }
@@ -30,7 +30,7 @@ namespace PivixDownloader.ApiClient.OAuth
             public string RefreshToken { get; set; }
         }
 
-        public class PivixOAuthRequest
+        public class PixivOAuthRequest
         {
             [HttpAlias("client_id")]
             public string ClientId { get; set; }
@@ -55,31 +55,31 @@ namespace PivixDownloader.ApiClient.OAuth
         {
             [Route("{oAuth2TokenPath}")]
             [HttpPost]
-            Task<IHttpResult<PivixOAuthProtocal<PivixOAuthResponse>>> AuthToken([PathParam]string oAuth2TokenPath, [FormBody]PivixOAuthRequest request, [FormBody]string grant_type);
+            Task<IHttpResult<PixivOAuthProtocal<PixivOAuthResponse>>> AuthToken([PathParam]string oAuth2TokenPath, [FormBody]PixivOAuthRequest request, [FormBody]string grant_type);
 
             [Route("{oAuth2TokenPath}")]
             [HttpPost]
-            Task<IHttpResult<PivixOAuthProtocal<PivixOAuthResponse>>> RefreshToken([PathParam]string oAuth2TokenPath, [FormBody]PivixOAuthRequest request, [FormBody]string refresh_token, [FormBody]string grant_type);
+            Task<IHttpResult<PixivOAuthProtocal<PixivOAuthResponse>>> RefreshToken([PathParam]string oAuth2TokenPath, [FormBody]PixivOAuthRequest request, [FormBody]string refresh_token, [FormBody]string grant_type);
         }
 
         private readonly IOAuth2Api _oAuth2Api;
         private readonly string _oAuth2TokenPath;
-        private Task<IHttpResult<PivixOAuthProtocal<PivixOAuthResponse>>> authTokenTask;
-        private Task<IHttpResult<PivixOAuthProtocal<PivixOAuthResponse>>> refreshTokenTask;
-        private PivixOAuthResponse oAuthResponse;
+        private Task<IHttpResult<PixivOAuthProtocal<PixivOAuthResponse>>> authTokenTask;
+        private Task<IHttpResult<PixivOAuthProtocal<PixivOAuthResponse>>> refreshTokenTask;
+        private PixivOAuthResponse oAuthResponse;
 
-        private readonly PivixOAuthRequest  _request;
-        public PivixOAuthHandler(string loginHost, PivixOAuthRequest request)
+        private readonly PixivOAuthRequest  _request;
+        public PixivOAuthHandler(string loginHost, PixivOAuthRequest request)
             : this(loginHost, "auth/token", request)
         {
 
         }
-        public PivixOAuthHandler(string loginHost, string oAuth2TokenPath, PivixOAuthRequest request)
+        public PixivOAuthHandler(string loginHost, string oAuth2TokenPath, PixivOAuthRequest request)
         {
             this._request = request;
             this._oAuth2TokenPath = oAuth2TokenPath.Trim('/');
             var factory = new EasyHttpClientFactory();
-            factory.Config.HttpClientProvider = new PivixHttpClientProvier();
+            factory.Config.HttpClientProvider = new PixivHttpClientProvier();
             _oAuth2Api = factory.Create<IOAuth2Api>(loginHost);
         }
 
@@ -104,7 +104,7 @@ namespace PivixDownloader.ApiClient.OAuth
         public async Task<bool> RefreshAccessToken(HttpRequestMessage originalHttpRequestMessage)
         {
             var canRefreshToken = oAuthResponse != null && !string.IsNullOrWhiteSpace(oAuthResponse.RefreshToken);
-            IHttpResult<PivixOAuthProtocal<PivixOAuthResponse>> result = null;
+            IHttpResult<PixivOAuthProtocal<PixivOAuthResponse>> result = null;
             if (canRefreshToken)
             {
                 result = await TaskWhenEnd(refreshTokenTask, () => _oAuth2Api.RefreshToken(this._oAuth2TokenPath, this._request, oAuthResponse.RefreshToken, "refresh_token"));

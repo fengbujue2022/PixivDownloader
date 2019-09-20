@@ -1,6 +1,4 @@
-﻿using PivixDownloader.ApiClient;
-using PivixDownloader.ApiClient.Api;
-using SimpleHttpClient;
+﻿using SimpleHttpClient;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -8,32 +6,34 @@ using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using System.Linq;
-using PivixDownloader.ApiClient.Common;
 using System.Threading;
+using PixivDownloader.ApiClient.Common;
+using PixivDownloader.ApiClient;
+using PixivDownloader.ApiClient.Api;
 
-namespace PivixDownloader
+namespace PixivDownloader
 {
     class Program
     {
         //configurable for yourself
         private static string Username = "";
         private static string Password = "";
-        private static string DownloadDir = @"C:\Pivix";
+        private static string DownloadDir = @"C:\Pixiv";
 
 
-        public static Lazy<PivixHttpClientProvier> pivixHttpClientProvier = new Lazy<PivixHttpClientProvier>();
+        public static Lazy<PixivHttpClientProvier> PixivHttpClientProvier = new Lazy<PixivHttpClientProvier>();
 
         static async Task Main(string[] args)
         {
-            var factory = new PivixApiClientFactory(Username, Password);
-            var pivixApiClient = factory.Create<IPivixApiClient>();
+            var factory = new PixivApiClientFactory(Username, Password);
+            var PixivApiClient = factory.Create<IPixivApiClient>();
 
-            var searchResponse = await pivixApiClient.SearchIllust("珂朵莉");
+            var searchResponse = await PixivApiClient.SearchIllust("珂朵莉");
 
             searchResponse.illusts = searchResponse.illusts.OrderByDescending(x => x.total_bookmarks).ToList();
             var theFirstOneId = searchResponse.illusts.First().id;
 
-            var relatedResponse = await pivixApiClient.IllustRelated(theFirstOneId);
+            var relatedResponse = await PixivApiClient.IllustRelated(theFirstOneId);
 
             foreach (var illust in relatedResponse.illusts)
             {
@@ -44,7 +44,7 @@ namespace PivixDownloader
 
         private static async Task Download(string url)
         {
-            var client = pivixHttpClientProvier.Value.GetClient(null);
+            var client = PixivHttpClientProvier.Value.GetClient(null);
 
             if (!Directory.Exists(DownloadDir))
                 Directory.CreateDirectory(DownloadDir);

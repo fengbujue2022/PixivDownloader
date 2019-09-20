@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.645
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PivixDownloader", "PivixDownloader\PivixDownloader.csproj", "{7665008C-63B5-4A86-A83C-E4E1A2C96F9B}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PixivDownloader", "PixivDownloader\PixivDownloader.csproj", "{7665008C-63B5-4A86-A83C-E4E1A2C96F9B}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleHttpClient", "SimpleHttpClient\SimpleHttpClient\SimpleHttpClient.csproj", "{614ED984-B473-4C34-AF01-9F053B16808F}"
 EndProject

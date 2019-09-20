@@ -5,9 +5,9 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Security.Cryptography;
 
-namespace PivixDownloader.ApiClient.Common
+namespace PixivDownloader.ApiClient.Common
 {
-    public class PivixHeaderValueHandler : System.Net.Http.DelegatingHandler
+    public class PixivHeaderValueHandler : System.Net.Http.DelegatingHandler
     {
         private readonly string hashSecret = "28c1fdd170a5204386cb1313c7077b34f83e4aaf4aa829ce78c231e05b0bae2c";
 
