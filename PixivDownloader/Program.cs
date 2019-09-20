@@ -10,38 +10,85 @@ using System.Threading;
 using PixivDownloader.ApiClient.Common;
 using PixivDownloader.ApiClient;
 using PixivDownloader.ApiClient.Api;
+using PixivDownloader.ApiClient.Response;
 
 namespace PixivDownloader
 {
     class Program
     {
         //configurable for yourself
-        private static string Username = "";
-        private static string Password = "";
-        private static string DownloadDir = @"C:\Pixiv";
+        private static readonly string Username = "";
+        private static readonly string Password = "";
+        private static readonly string DownloadDir = @"D:\Pixiv";
 
-
-        public static Lazy<PixivHttpClientProvier> PixivHttpClientProvier = new Lazy<PixivHttpClientProvier>();
+        private static Lazy<PixivHttpClientProvier> PixivHttpClientProvier = new Lazy<PixivHttpClientProvier>();
+        private static PixivApiClientFactory factory = new PixivApiClientFactory(Username, Password);
+        private static IPixivApiClient pixivApiClient = factory.Create<IPixivApiClient>();
 
         static async Task Main(string[] args)
         {
-            var factory = new PixivApiClientFactory(Username, Password);
-            var PixivApiClient = factory.Create<IPixivApiClient>();
+            var hbSearchResult = await SearchThenTakeHighlyBookmark(
+                keyword: "heaven's feel",
+                bookmarkLimit: 1000,
+                takeCount: 20);
 
-            var searchResponse = await PixivApiClient.SearchIllust("珂朵莉");
+            var relateResult =await GetRelatedWithSearchResult(hbSearchResult);
 
-            searchResponse.illusts = searchResponse.illusts.OrderByDescending(x => x.total_bookmarks).ToList();
-            var theFirstOneId = searchResponse.illusts.First().id;
+            ParallelDownload(relateResult.Select(x => x.meta_single_page.original_image_url));
+        }
 
-            var relatedResponse = await PixivApiClient.IllustRelated(theFirstOneId);
+        private static async Task<IEnumerable<Illusts>> SearchThenTakeHighlyBookmark(string keyword, int bookmarkLimit, int takeCount)
+        {
+            var maxCalledCount = 10;
+            var offset = 1;
 
-            foreach (var illust in relatedResponse.illusts)
+            var illusts = new List<Illusts>();
+
+            while (maxCalledCount > 0)
             {
-                await Download(illust.image_urls.large);
+                var searchResult = await pixivApiClient.SearchIllust(keyword, offset: offset);
+                illusts.AddRange(searchResult.illusts.Where(x => x.total_bookmarks > bookmarkLimit).ToList());
+                if (illusts.Count >= takeCount)
+                {
+                    break;
+                }
+                maxCalledCount--;
+                offset++;
+            }
+            return illusts.Take(takeCount);
+        }
+
+        private static async Task<IEnumerable<Illusts>> GetRelatedWithSearchResult(IEnumerable<Illusts> illusts)
+        {
+            var result = new List<Illusts>();
+            result.AddRange(illusts);
+
+            foreach (var illust in illusts)
+            {
+                await DoGetRelated(illust.id);
+            }
+
+            return result;
+
+            async Task DoGetRelated(int illustId)
+            {
+                var relateRseult = await pixivApiClient.IllustRelated(illustId);
+                if (relateRseult != null)
+                {
+                    var existingIds = result.Select(x => x.id);
+                    var addableResult = relateRseult.illusts.Where(x => !existingIds.Contains(x.id)).ToList();
+                    result.AddRange(addableResult);
+                }
             }
         }
 
-
+        private static void ParallelDownload(IEnumerable<String> urls,int maxDegreeOfParallelism=100)
+        {
+            Parallel.ForEach(urls, new ParallelOptions() { MaxDegreeOfParallelism = maxDegreeOfParallelism }, async (url) =>
+            {
+                await Download(url);
+            });
+        }
         private static async Task Download(string url)
         {
             var client = PixivHttpClientProvier.Value.GetClient(null);
@@ -55,7 +102,7 @@ namespace PixivDownloader
             if (!File.Exists(finalPath))
             {
                 var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, url), CancellationToken.None);
-                if (response.Content.Headers.ContentType!=null && response.Content.Headers.ContentType.MediaType.Contains("image"))
+                if (response.Content.Headers.ContentType != null && response.Content.Headers.ContentType.MediaType.Contains("image"))
                 {
                     using (var fs = new FileStream(finalPath, FileMode.CreateNew))
                     {

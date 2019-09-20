@@ -18,7 +18,7 @@ namespace PixivDownloader.ApiClient.Common
             request.Headers.Add("X-Client-Hash", MD5Hash(time + hashSecret));
             request.Headers.Add("User-Agent", "PixivIOSApp/5.8.0");
             request.Headers.Add("Accept-Language", "zh-CN");
-            request.Headers.Add("referer", "https://app-api.pixiv.net/");
+            request.Headers.Add("Referer", "https://app-api.pixiv.net/");
             return base.SendAsync(request, cancellationToken);
 
             string MD5Hash(string Input)

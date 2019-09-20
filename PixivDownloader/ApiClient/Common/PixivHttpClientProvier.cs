@@ -38,7 +38,7 @@ namespace PixivDownloader.ApiClient.Common
             {
                 handler.EndPointProvider = new PixivEndPointProvider();
             }, handlers);
-            
+            httpClient.Timeout = clientSetting.Timeout;
             //var httpClient = HttpClientFactory.Create(handlers);
 
             return httpClient;

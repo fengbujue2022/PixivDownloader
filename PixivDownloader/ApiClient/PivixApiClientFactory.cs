@@ -13,6 +13,7 @@ namespace PixivDownloader.ApiClient
         {
             this.Config.Host = new Uri("https://app-api.pixiv.net");
             this.Config.HttpClientProvider = new PixivHttpClientProvier();
+            this.Config.HttpClientSettings.Timeout = TimeSpan.FromSeconds(120);
             this.Config.HttpClientSettings.OAuth2ClientHandler = new PixivOAuthHandler(
                 "https://oauth.secure.pixiv.net/",
                 new PixivOAuthHandler.PixivOAuthRequest

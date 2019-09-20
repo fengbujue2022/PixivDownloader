@@ -13,7 +13,7 @@ namespace PixivDownloader.ApiClient.Api
         [HttpGet]
         [Authorize]
         [Route("v1/search/illust")]
-        Task< IllustsListingResponse> SearchIllust(string word, string sort = "date_desc", string search_target = "partial_match_for_tags", string filter = "for_ios");
+        Task< IllustsListingResponse> SearchIllust(string word, string sort = "date_desc", string search_target = "partial_match_for_tags", string filter = "for_ios",int? offset=null);
 
         [HttpGet]
         [Authorize]
