@@ -142,10 +142,6 @@ namespace PixivDownloader.ApiClient.Response
         /// <summary>
         /// 
         /// </summary>
-        public string series { get; set; }
-        /// <summary>
-        /// 
-        /// </summary>
         public Meta_single_page meta_single_page { get; set; }
         /// <summary>
         /// 
