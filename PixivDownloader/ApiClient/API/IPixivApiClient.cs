@@ -8,14 +8,10 @@ using PixivDownloader.ApiClient.Response;
 
 namespace PixivDownloader.ApiClient.Api
 {
+    //refer to https://github.com/upbit/pixivpy/wiki
+
     public interface IPixivApiClient
     {
-        //search_target - 搜索类型
-        //  partial_match_for_tags  - 标签部分一致
-        //  exact_match_for_tags    - 标签完全一致
-        //  title_and_caption       - 标题说明文
-        //sort: [date_desc, date_asc]
-        //duration: [within_last_day, within_last_week, within_last_month]
         [HttpGet]
         [Authorize]
         [Route("v1/search/illust")]
@@ -38,11 +34,9 @@ namespace PixivDownloader.ApiClient.Api
 
         [HttpGet]
         [Authorize]
-        [Route("v1/illust/detail")]
+        [Route("v1/illust/recommended")]
         Task<string> IllustRecommended(string content_type = "illust", bool include_ranking_label = true, string filter = "for_ios");
 
-        //mode: [day, week, month, day_male, day_female, week_original, week_rookie, day_manga]
-        //date: yyyy-mm-dd
         [HttpGet]
         [Authorize]
         [Route("v1/illust/ranking")]

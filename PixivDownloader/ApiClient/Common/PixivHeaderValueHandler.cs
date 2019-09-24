@@ -23,7 +23,6 @@ namespace PixivDownloader.ApiClient.Common
 
             string MD5Hash(string Input)
             {
-                if (string.IsNullOrEmpty(Input)) return null;
                 using (var md5 = MD5.Create())
                 {
                     var bytes = md5.ComputeHash(Encoding.UTF8.GetBytes(Input.Trim()));
