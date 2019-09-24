@@ -9,14 +9,14 @@ namespace PixivDownloader.ApiClient.Common
 {
     public class PixivHttpClientProvier : IHttpClientProvider
     {
-        private object syncObject = new object();
+        private readonly object _syncObject = new object();
         private HttpMessageInvoker _httpClient;
 
         public HttpMessageInvoker GetClient(HttpClientSettings clientSetting, params DelegatingHandler[] handlers)
         {
             if (_httpClient == null)
             {
-                lock (syncObject)
+                lock (_syncObject)
                 {
                     if (_httpClient == null)
                     {
