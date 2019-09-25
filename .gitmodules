@@ -1,6 +1,3 @@
-[submodule "SimpleHttpClient"]
-	path = SimpleHttpClient
-	url = https://github.com/Feng-Bu-Jue/SimpleHttpClient.git
-[submodule "EasyHttpClient-NetStandard"]
-	path = EasyHttpClient-NetStandard
-	url = https://github.com/Feng-Bu-Jue/EasyHttpClient-NetStandard.git
+[submodule "PixivApi"]
+	path = PixivApi
+	url = https://github.com/Feng-Bu-Jue/PixivApi.git

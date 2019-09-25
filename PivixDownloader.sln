@@ -11,6 +11,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SubModule", "SubModule", "{
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EasyHttpClient", "EasyHttpClient-NetStandard\src\EasyHttpClient\EasyHttpClient.csproj", "{26388E56-5F78-44BC-803A-88B07834F7CF}"
 EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PixivApi", "PixivApi\PixivApi\PixivApi.csproj", "{BC5E350D-B680-44C5-9163-339240CB3782}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,6 +31,10 @@ Global
 		{26388E56-5F78-44BC-803A-88B07834F7CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{26388E56-5F78-44BC-803A-88B07834F7CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{26388E56-5F78-44BC-803A-88B07834F7CF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BC5E350D-B680-44C5-9163-339240CB3782}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC5E350D-B680-44C5-9163-339240CB3782}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC5E350D-B680-44C5-9163-339240CB3782}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC5E350D-B680-44C5-9163-339240CB3782}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -36,6 +42,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{614ED984-B473-4C34-AF01-9F053B16808F} = {B8B1E785-065E-42F2-AFE4-F06040D6EF2E}
 		{26388E56-5F78-44BC-803A-88B07834F7CF} = {B8B1E785-065E-42F2-AFE4-F06040D6EF2E}
+		{BC5E350D-B680-44C5-9163-339240CB3782} = {B8B1E785-065E-42F2-AFE4-F06040D6EF2E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {341B96DA-B332-4D39-883D-97C14F411A05}
