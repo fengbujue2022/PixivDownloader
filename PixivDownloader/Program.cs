@@ -1,6 +1,7 @@
 ﻿using PixivApi;
 using PixivApi.Api;
 using PixivApi.Model.Response;
+using PixivApi.OAuth;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,7 +20,7 @@ namespace PixivDownloader
         private static readonly string DownloadDir = @"C:\Pixiv3";
 
         private static Lazy<PixivHttpClientProvier> PixivHttpClientProvier = new Lazy<PixivHttpClientProvier>();
-        private static PixivApiClientFactory factory = new PixivApiClientFactory(Username, Password);
+        private static PixivApiClientFactory factory = new PixivApiClientFactory(Username, Password, new TextFileAuthStore() ,TimeSpan.FromSeconds(15));
         private static IPixivApiClient pixivApiClient = factory.Create<IPixivApiClient>();
 
         private static object _syncObject = new object();
@@ -81,7 +82,10 @@ namespace PixivDownloader
                 if (relateRseult != null)
                 {
                     var existingIds = result.Select(x => x.id);
-                    var addableResult = relateRseult.illusts.Where(x => x.total_bookmarks > bookmarkLimit && !existingIds.Contains(x.id)).ToList();
+                    var addableResult = relateRseult.illusts.Where(x =>
+                        x.total_bookmarks > bookmarkLimit
+                        && x.type == "illust"
+                        && !existingIds.Contains(x.id)).ToList();
                     result.AddRange(addableResult);
                 }
             }
