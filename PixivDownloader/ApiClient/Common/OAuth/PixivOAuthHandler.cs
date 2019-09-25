@@ -20,10 +20,10 @@ namespace PixivDownloader.ApiClient.OAuth
         private readonly IOAuth2Api _oAuth2Api;
         private readonly IAuthStore _authStore;
         private readonly string _oAuth2TokenPath;
-        private Task<IHttpResult<PixivOAuthProtocal<PixivOAuthResponse>>> authTokenTask;
-        private Task<IHttpResult<PixivOAuthProtocal<PixivOAuthResponse>>> refreshTokenTask;
+        private Task<PixivOAuthResponse> authTokenTask;
+        private Task<PixivOAuthResponse> refreshTokenTask;
 
-        private readonly PixivOAuthRequest  _request;
+        private readonly PixivOAuthRequest _request;
         public PixivOAuthHandler(string loginHost, PixivOAuthRequest request, IAuthStore authStore)
             : this(loginHost, "auth/token", request, authStore)
         {
@@ -43,34 +43,35 @@ namespace PixivDownloader.ApiClient.OAuth
 
         public async Task SetAccessToken(HttpRequestMessage originalHttpRequestMessage)
         {
-            var oAuthResponse = await  _authStore.GetAuthResponseAsync();
-            await DoAuthToken(oAuthResponse);
-            if (oAuthResponse != null)
-            {
-                originalHttpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", oAuthResponse.AccessToken); ;
-            }
+            var task = TaskWhenEnd(authTokenTask, () => DoAuthToken());
+            authTokenTask = task;
+            var authResponse = await authTokenTask;
+            SetAuthenticationHeader(originalHttpRequestMessage, authResponse);
         }
 
         public async Task<bool> RefreshAccessToken(HttpRequestMessage originalHttpRequestMessage)
         {
-            var oAuthResponse = await _authStore.GetAuthResponseAsync();
-            await DoRefreshToken(oAuthResponse);
-            if (oAuthResponse != null)
-            {
-                originalHttpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", oAuthResponse.AccessToken);
-                return true;
-            }
-            else
-            {
-                return false;
-            }
+            var task = TaskWhenEnd(refreshTokenTask, () => DoRefreshToken());
+            refreshTokenTask = task;
+            var authResponse = await refreshTokenTask;
+            return SetAuthenticationHeader(originalHttpRequestMessage, authResponse);
         }
 
-        private async Task DoAuthToken(PixivOAuthResponse authResponse)
+        private bool SetAuthenticationHeader(HttpRequestMessage httpRequestMessage, PixivOAuthResponse authResponse)
         {
             if (authResponse == null)
+                return false;
+
+            httpRequestMessage.Headers.Authorization = new AuthenticationHeaderValue("Bearer", authResponse.AccessToken);
+            return true;
+        }
+
+        private async Task<PixivOAuthResponse> DoAuthToken()
+        {
+            var authResponse = await _authStore.GetAuthResponseAsync();
+            if (authResponse == null)
             {
-                var result = await TaskWhenEnd(authTokenTask, () => _oAuth2Api.AuthToken(this._oAuth2TokenPath, this._request, this._request.GrantType));
+                var result = await _oAuth2Api.AuthToken(this._oAuth2TokenPath, this._request, this._request.GrantType);
 
                 if (result != null && result.IsSuccessStatusCode && result.Content?.Response != null)
                 {
@@ -78,15 +79,17 @@ namespace PixivDownloader.ApiClient.OAuth
                     await _authStore.AddAuthResponseAsync(authResponse);
                 }
             }
+            return authResponse;
         }
 
-        private async Task DoRefreshToken(PixivOAuthResponse authResponse)
+        private async Task<PixivOAuthResponse> DoRefreshToken()
         {
+            var authResponse = await _authStore.GetAuthResponseAsync();
             var canRefreshToken = authResponse != null && !string.IsNullOrWhiteSpace(authResponse.RefreshToken);
             IHttpResult<PixivOAuthProtocal<PixivOAuthResponse>> result = null;
             if (canRefreshToken)
             {
-                result = await TaskWhenEnd(refreshTokenTask, () => _oAuth2Api.RefreshToken(this._oAuth2TokenPath, this._request, authResponse.RefreshToken, "refresh_token"));
+                result = await _oAuth2Api.RefreshToken(this._oAuth2TokenPath, this._request, authResponse.RefreshToken, "refresh_token");
 
                 if (result != null && result.IsSuccessStatusCode)
                 {
@@ -96,11 +99,13 @@ namespace PixivDownloader.ApiClient.OAuth
 
             if (!canRefreshToken || (result != null && result.StatusCode == HttpStatusCode.Unauthorized))
             {
-                await DoAuthToken(authResponse);
+                authResponse = await TaskWhenEnd(authTokenTask, () => DoAuthToken());
             }
+
+            return authResponse;
         }
 
-        private  Task<T> TaskWhenEnd<T>(Task<T> task,Func<Task<T>> valueFactory)
+        private Task<T> TaskWhenEnd<T>(Task<T> task, Func<Task<T>> valueFactory)
         {
             if (task == null || task.IsCanceled || task.IsCompleted || task.IsFaulted)
             {
