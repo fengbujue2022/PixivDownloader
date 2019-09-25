@@ -7,8 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\EasyHttpClient-NetStandard\src\EasyHttpClient\EasyHttpClient.csproj" />
-    <ProjectReference Include="..\SimpleHttpClient\SimpleHttpClient\SimpleHttpClient.csproj" />
+    <ProjectReference Include="..\PixivApi\PixivApi\PixivApi.csproj" />
   </ItemGroup>
 
 </Project>

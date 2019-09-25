@@ -1,17 +1,13 @@
-﻿using SimpleHttpClient;
+﻿using PixivApi;
+using PixivApi.Api;
+using PixivApi.Model.Response;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Net;
-using System.Net.Http;
-using System.Threading.Tasks;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
-using PixivDownloader.ApiClient.Common;
-using PixivDownloader.ApiClient;
-using PixivDownloader.ApiClient.Api;
-using PixivDownloader.ApiClient.Response;
-using Newtonsoft.Json;
+using System.Threading.Tasks;
 
 namespace PixivDownloader
 {
