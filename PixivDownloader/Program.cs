@@ -65,8 +65,6 @@ namespace PixivDownloader
             async Task DoSearch(int offset)
             {
                 var searchResult = await pixivApiClient.SearchIllust(keyword, offset: offset);
-                Console.WriteLine("called ");
-                var d = JsonConvert.SerializeObject(searchResult);
                 if (searchResult != null)
                 {
                     illusts.AddRange(searchResult.illusts.Where(x => x.total_bookmarks > bookmarkLimit).ToList());
@@ -83,9 +81,7 @@ namespace PixivDownloader
 
             async Task DoGetRelated(int illustId)
             {
-                Console.WriteLine("called " + illustId);
                 var relateRseult = await pixivApiClient.IllustRelated(illustId);
-
                 if (relateRseult != null)
                 {
                     var existingIds = result.Select(x => x.id);

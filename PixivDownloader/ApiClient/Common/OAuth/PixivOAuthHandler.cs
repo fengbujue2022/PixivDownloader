@@ -41,6 +41,14 @@ namespace PixivDownloader.ApiClient.OAuth
             this._authStore = authStore;
         }
 
+        public bool ValidateUnauthorized(HttpResponseMessage httpResponse)
+        {
+            return
+                httpResponse.StatusCode == HttpStatusCode.Unauthorized
+                ||
+                httpResponse.StatusCode == HttpStatusCode.BadRequest;
+        }
+
         public async Task SetAccessToken(HttpRequestMessage originalHttpRequestMessage)
         {
             var task = TaskWhenEnd(authTokenTask, () => DoAuthToken());
@@ -94,10 +102,11 @@ namespace PixivDownloader.ApiClient.OAuth
                 if (result != null && result.IsSuccessStatusCode)
                 {
                     authResponse = result.Content.Response;
+                    await _authStore.AddAuthResponseAsync(authResponse);
                 }
             }
 
-            if (!canRefreshToken || (result != null && result.StatusCode == HttpStatusCode.Unauthorized))
+            if (!canRefreshToken || (result != null && result.StatusCode == HttpStatusCode.BadRequest))
             {
                 authResponse = await TaskWhenEnd(authTokenTask, () => DoAuthToken());
             }
