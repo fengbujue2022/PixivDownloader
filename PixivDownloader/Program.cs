@@ -1,4 +1,5 @@
-﻿using PixivApi;
+﻿using Dasync.Collections;
+using PixivApi;
 using PixivApi.Api;
 using PixivApi.Model.Response;
 using PixivApi.OAuth;
@@ -19,110 +20,118 @@ namespace PixivDownloader
         private static readonly string Password = "";
         private static readonly string DownloadDir = @"C:\Pixiv3";
 
-        private static Lazy<PixivHttpClientProvier> PixivHttpClientProvier = new Lazy<PixivHttpClientProvier>();
-        private static PixivApiClientFactory factory = new PixivApiClientFactory(Username, Password, new TextFileAuthStore() ,TimeSpan.FromSeconds(15));
-        private static IPixivApiClient pixivApiClient = factory.Create<IPixivApiClient>();
+        private static readonly PixivApiClientFactory _factory = new PixivApiClientFactory(Username, Password, new TextFileAuthStore(), TimeSpan.FromSeconds(15));
+        private static readonly IPixivApiClient _pixivApiClient = _factory.Create<IPixivApiClient>();
+        private static readonly TaskQueue _taskQueue = new TaskQueue(20);
 
         private static object _syncObject = new object();
 
         static async Task Main(string[] args)
         {
-            var hbSearchResult = await SearchThenTakeHighlyBookmark(
-                keyword: "間桐桜",
+            await SearchThenTakeHighlyBookmark(
+                keyword: "arknights",
                 bookmarkLimit: 1000,
-                takeCount: 10);
-
-            //深度大于3以上会请求太多api  建议值为3以下
-            var relateResult = await RecursGetRelatedWithSearchResult(
-                illusts: hbSearchResult,
-                bookmarkLimit: 1000,
-                deep: 2);
-
-            ParallelDownload(relateResult.Select(x => x.image_urls.square_medium).Where(x => !string.IsNullOrWhiteSpace(x)));
-        }
-
-        private static async Task<IEnumerable<Illusts>> SearchThenTakeHighlyBookmark(string keyword, int bookmarkLimit, int takeCount, int maxCalledCount = 30, int parallelism = 2)
-        {
-            var cOffset = 1;
-
-            var illusts = new List<Illusts>();
-
-            while (maxCalledCount > 0)
+                takeCount: 10)
+            .ForEachAsync((illusts) =>
             {
-                await Task.WhenAll(Enumerable.Range(cOffset, parallelism).Select(x => DoSearch(x)));
-                if (illusts.Count >= takeCount)
+                RecursGetRelated(illusts, bookmarkLimit: 1000, deep: 2).ForEachAsync(resultList =>
                 {
-                    break;
-                }
-                maxCalledCount--;
-                cOffset += parallelism;
-            }
-            return illusts.Take(takeCount);
-
-            async Task DoSearch(int offset)
-            {
-                var searchResult = await pixivApiClient.SearchIllust(keyword, offset: offset);
-                if (searchResult != null)
-                {
-                    illusts.AddRange(searchResult.illusts.Where(x => x.total_bookmarks > bookmarkLimit).ToList());
-                }
-            }
-        }
-
-        private static async Task<IEnumerable<Illusts>> GetRelatedWithSearchResult(IEnumerable<Illusts> illusts, int bookmarkLimit)
-        {
-            var result = new List<Illusts>();
-            result.AddRange(illusts);
-            await Task.WhenAll(illusts.Select(x => DoGetRelated(x.id)).ToList());
-            return result;
-
-            async Task DoGetRelated(int illustId)
-            {
-                var relateRseult = await pixivApiClient.IllustRelated(illustId);
-                if (relateRseult != null)
-                {
-                    var existingIds = result.Select(x => x.id);
-                    var addableResult = relateRseult.illusts.Where(x =>
-                        x.total_bookmarks > bookmarkLimit
-                        && x.type == "illust"
-                        && !existingIds.Contains(x.id)).ToList();
-                    result.AddRange(addableResult);
-                }
-            }
-        }
-
-        private static async Task<IEnumerable<Illusts>> RecursGetRelatedWithSearchResult(IEnumerable<Illusts> illusts, int bookmarkLimit, int deep)
-        {
-            if (deep > 0)
-            {
-                illusts = await GetRelatedWithSearchResult(illusts, bookmarkLimit);
-                deep--;
-                illusts = await RecursGetRelatedWithSearchResult(illusts, bookmarkLimit, deep);
-            }
-            return illusts;
-        }
-
-        private static void ParallelDownload(IEnumerable<String> urls, int parallelism = 100)
-        {
-            Parallel.ForEach(urls, new ParallelOptions() { MaxDegreeOfParallelism = parallelism }, (url) =>
-            {
-                Download(url).Wait();
+                    foreach (var r in resultList)
+                    {
+                        AddToDownloadQueue(r.image_urls.medium);
+                    }
+                });
             });
+        }
+
+        private static IAsyncEnumerable<IEnumerable<Illusts>> SearchThenTakeHighlyBookmark(string keyword, int bookmarkLimit, int takeCount, int maxCalledCount = 30)
+        {
+            return new AsyncEnumerable<IEnumerable<Illusts>>(async yield =>
+            {
+                var pageIndex = 0;
+                var count = 0;
+                while (maxCalledCount > 0)
+                {
+                    if (count >= takeCount)
+                    {
+                        yield.Break();
+                    }
+                    var r = await DoSearch(pageIndex * 30);
+                    await yield.ReturnAsync(r.ToList());
+                    count += r.Count();
+                    pageIndex++;
+                    maxCalledCount--;
+                }
+            });
+
+            async Task<IEnumerable<Illusts>> DoSearch(int offset)
+            {
+                var searchResult = await _pixivApiClient.SearchIllust(keyword, offset: offset);
+
+                if (searchResult?.illusts != null)
+                {
+                    searchResult.illusts = searchResult.illusts.Where(x => x.total_bookmarks > bookmarkLimit);
+                }
+                return searchResult.illusts;
+            }
+        }
+
+        private static IAsyncEnumerable<IEnumerable<Illusts>> GetRelated(IEnumerable<Illusts> illusts, int bookmarkLimit)
+        {
+            return new AsyncEnumerable<IEnumerable<Illusts>>(async yield =>
+            {
+                foreach (var illustd in illusts)
+                {
+                    var r = await DoGetRelated(illustd.id);
+                    await yield.ReturnAsync(r);
+                }
+            });
+            async Task<IEnumerable<Illusts>> DoGetRelated(int illustId)
+            {
+                var relateRseult = await _pixivApiClient.IllustRelated(illustId);
+                relateRseult.illusts = relateRseult.illusts.Where(x =>
+                    x.total_bookmarks > bookmarkLimit
+                    && x.type == "illust");
+                return relateRseult.illusts;
+            }
+        }
+
+        private static IAsyncEnumerable<IEnumerable<Illusts>> RecursGetRelated(IEnumerable<Illusts> illusts, int bookmarkLimit, int deep)
+        {
+            return new AsyncEnumerable<IEnumerable<Illusts>>(async yield =>
+            {
+                var result = GetRelated(illusts, bookmarkLimit);
+                if (deep > 0)
+                {
+                    deep--;
+                    illusts = (await result.ToListAsync()).SelectMany(x => x);
+                    result = RecursGetRelated(illusts, bookmarkLimit, deep);
+                }
+                else
+                {
+                    await result.ForEachAsync(async (r) =>
+                    {
+                        await yield.ReturnAsync(r);
+                    });
+                }
+            });
+        }
+
+
+        private static void AddToDownloadQueue(string url)
+        {
+            _ = _taskQueue.Queue(() => Download(url));
         }
 
         private static async Task Download(string url)
         {
-            var client = PixivHttpClientProvier.Value.GetClient(null);
-
             //1. Check directory
             if (!Directory.Exists(DownloadDir))
                 Directory.CreateDirectory(DownloadDir);
 
-            var fileName = ResolveFileName();
-            var finalPath = Path.Combine(DownloadDir, fileName);
-
             //2. Create file
             FileStream fs = null;
+            var finalPath = Path.Combine(DownloadDir, ResolveFileName());
             if (!File.Exists(finalPath))
             {
                 lock (_syncObject)
@@ -137,8 +146,8 @@ namespace PixivDownloader
             //3. Copy stream
             if (fs != null)
             {
-                var response = await client.SendAsync(new HttpRequestMessage(HttpMethod.Get, url), CancellationToken.None);
-                if (response.Content.Headers.ContentType != null && response.Content.Headers.ContentType.MediaType.Contains("image"))
+                var response = await _pixivApiClient.Download(url);
+                if (response.ContentHeaders.ContentType != null && response.ContentHeaders.ContentType.MediaType.Contains("image"))
                 {
                     using (fs)
                     {
