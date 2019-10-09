@@ -5,10 +5,9 @@ using System.Threading.Tasks;
 
 namespace PixivDownloader
 {
-    //TODO: add task cancel by timeout feature
     public class TaskQueue
     {
-        private readonly ConcurrentQueue<Func<Task>> _waitingQueue = new ConcurrentQueue<Func<Task>>();
+        private readonly Queue<Func<Task>> _waitingQueue = new Queue<Func<Task>>();
         private readonly int _maxParallelizationCount;
 
         private int _associatedParallelizationCount;
@@ -19,21 +18,19 @@ namespace PixivDownloader
             _maxParallelizationCount = maxParallelizationCount ?? int.MaxValue;
         }
 
-        public async ValueTask Queue(Func<Task> futureTask)
+        public void Queue(Func<Task> futureTask)
         {
-            if (_associatedParallelizationCount < _maxParallelizationCount)
+            lock (_syncObj)
             {
-                lock (_syncObj)
+                if (_associatedParallelizationCount < _maxParallelizationCount)
                 {
-                    Console.WriteLine("并行数未满 可以执行 " + _associatedParallelizationCount);
                     _associatedParallelizationCount++;
+                    WrapTask(futureTask).Invoke();
                 }
-                await WrapTask(futureTask).Invoke();
-            }
-            else
-            {
-                Console.WriteLine("并行数已满 加入等待队列 " + _associatedParallelizationCount);
-                _waitingQueue.Enqueue(futureTask);
+                else
+                {
+                    _waitingQueue.Enqueue(futureTask);
+                }
             }
         }
 
@@ -42,7 +39,6 @@ namespace PixivDownloader
             return async () =>
             {
                 await futureTask();
-                Console.WriteLine("任务完成 等待队列还有" + _waitingQueue.Count);
                 if (_waitingQueue.TryDequeue(out var waitTask))
                 {
                     WrapTask(waitTask).Invoke();
@@ -51,12 +47,11 @@ namespace PixivDownloader
                 {
                     lock (_syncObj)
                     {
-                        Console.WriteLine("等待队列没有任务 parallel count:" + _associatedParallelizationCount);
                         _associatedParallelizationCount--;
                     }
                 }
             };
         }
-
     }
+
 }

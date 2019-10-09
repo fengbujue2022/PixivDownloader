@@ -32,22 +32,29 @@ namespace PixivDownloader
                 keyword: "arknights",
                 bookmarkLimit: 1000,
                 takeCount: 10)
-            .ForEachAsync((illusts) =>
+            .ParallelForEachAsync(async (illusts) =>
             {
-                RecursGetRelated(illusts, bookmarkLimit: 1000, deep: 2).ForEachAsync(resultList =>
+                if (illusts != null && illusts.Any())
                 {
-                    foreach (var r in resultList)
+                    await GetRelated(illusts, bookmarkLimit: 1000).ForEachAsync(resultList =>
                     {
-                        AddToDownloadQueue(r.image_urls.medium);
-                    }
-                });
+                        foreach (var r in resultList)
+                        {
+                            AddToDownloadQueue(r.image_urls.square_medium);
+                        }
+                    });
+                }
             });
+
+            //todo 改为等待 taskqueue
+            await Task.Delay(100000);
         }
 
         private static IAsyncEnumerable<IEnumerable<Illusts>> SearchThenTakeHighlyBookmark(string keyword, int bookmarkLimit, int takeCount, int maxCalledCount = 30)
         {
             return new AsyncEnumerable<IEnumerable<Illusts>>(async yield =>
             {
+                var offset = 30;
                 var pageIndex = 0;
                 var count = 0;
                 while (maxCalledCount > 0)
@@ -56,8 +63,8 @@ namespace PixivDownloader
                     {
                         yield.Break();
                     }
-                    var r = await DoSearch(pageIndex * 30);
-                    await yield.ReturnAsync(r.ToList());
+                    var r = await DoSearch(pageIndex * offset);
+                    await yield.ReturnAsync(r);
                     count += r.Count();
                     pageIndex++;
                     maxCalledCount--;
@@ -72,7 +79,7 @@ namespace PixivDownloader
                 {
                     searchResult.illusts = searchResult.illusts.Where(x => x.total_bookmarks > bookmarkLimit);
                 }
-                return searchResult.illusts;
+                return searchResult?.illusts;
             }
         }
 
@@ -88,39 +95,52 @@ namespace PixivDownloader
             });
             async Task<IEnumerable<Illusts>> DoGetRelated(int illustId)
             {
+                Console.WriteLine("relate call");
                 var relateRseult = await _pixivApiClient.IllustRelated(illustId);
-                relateRseult.illusts = relateRseult.illusts.Where(x =>
-                    x.total_bookmarks > bookmarkLimit
-                    && x.type == "illust");
-                return relateRseult.illusts;
+                if (relateRseult?.illusts != null)
+                {
+                    relateRseult.illusts = relateRseult.illusts.Where(x =>
+                        x.total_bookmarks > bookmarkLimit
+                        && x.type == "illust").ToList();
+                }
+                return relateRseult?.illusts;
             }
         }
 
-        private static IAsyncEnumerable<IEnumerable<Illusts>> RecursGetRelated(IEnumerable<Illusts> illusts, int bookmarkLimit, int deep)
+        //好坑啊 tododododo
+        private static async Task<IAsyncEnumerable<IEnumerable<Illusts>>> RecursGetRelated(IEnumerable<Illusts> illusts, int bookmarkLimit, int deep)
         {
+            var result = GetRelated(illusts, bookmarkLimit);
+            if (deep > 0)
+            {
+                illusts = (await result.ToListAsync()).SelectMany(x => x);
+                illusts = illusts.GroupBy(x => x.id).Select(x => x.First());//distinct
+                try
+                {
+                    var tmpIllusts = new List<Illusts>();
+                    await (await RecursGetRelated(illusts, bookmarkLimit, --deep)).ParallelForEachAsync(async (x)=> {
+                        tmpIllusts.AddRange(x);
+                    });
+                    var illustList = illusts.ToList();
+                    illustList.AddRange(tmpIllusts);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine(ex);
+                }
+            }
             return new AsyncEnumerable<IEnumerable<Illusts>>(async yield =>
             {
-                var result = GetRelated(illusts, bookmarkLimit);
-                if (deep > 0)
+                await result.ForEachAsync(async (r) =>
                 {
-                    deep--;
-                    illusts = (await result.ToListAsync()).SelectMany(x => x);
-                    result = RecursGetRelated(illusts, bookmarkLimit, deep);
-                }
-                else
-                {
-                    await result.ForEachAsync(async (r) =>
-                    {
-                        await yield.ReturnAsync(r);
-                    });
-                }
+                    await yield.ReturnAsync(r);
+                });
             });
         }
 
-
         private static void AddToDownloadQueue(string url)
         {
-            _ = _taskQueue.Queue(() => Download(url));
+            _taskQueue.Queue(async () => await Download(url));
         }
 
         private static async Task Download(string url)
