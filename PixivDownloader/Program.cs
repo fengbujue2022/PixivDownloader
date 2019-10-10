@@ -36,7 +36,7 @@ namespace PixivDownloader
             {
                 if (illusts != null && illusts.Any())
                 {
-                    await UnWrapRecursGetRelated(illusts, bookmarkLimit: 1000, deep: 2).ForEachAsync(resultList =>
+                    await UnWrapRecursGetRelated(illusts, bookmarkLimit: 1000, deep: 2).ParallelForEachAsync(async resultList =>
                     {
                           foreach (var r in resultList)
                           {
@@ -105,7 +105,6 @@ namespace PixivDownloader
             }
         }
 
-
         private static IAsyncEnumerable<IEnumerable<Illusts>> UnWrapRecursGetRelated(IEnumerable<Illusts> illusts, int bookmarkLimit, int deep)
         {
             return RecursGetRelated(illusts, bookmarkLimit, deep).Result;
@@ -122,7 +121,7 @@ namespace PixivDownloader
             }
             return new AsyncEnumerable<IEnumerable<Illusts>>(async yield =>
             {
-                await result.ForEachAsync(async (r) =>
+                await result.ParallelForEachAsync(async (r) =>
                 {
                     await yield.ReturnAsync(r);
                 });
