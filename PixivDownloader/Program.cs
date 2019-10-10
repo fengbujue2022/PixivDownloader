@@ -28,29 +28,28 @@ namespace PixivDownloader
 
         static async Task Main(string[] args)
         {
-            await SearchThenTakeHighlyBookmark(
-                keyword: "arknights",
+            await Search(
+                keyword: "Arknights",
                 bookmarkLimit: 1000,
                 takeCount: 10)
             .ParallelForEachAsync(async (illusts) =>
             {
                 if (illusts != null && illusts.Any())
                 {
-                    await GetRelated(illusts, bookmarkLimit: 1000).ForEachAsync(resultList =>
+                    await UnWrapRecursGetRelated(illusts, bookmarkLimit: 1000, deep: 2).ForEachAsync(resultList =>
                     {
-                        foreach (var r in resultList)
-                        {
-                            AddToDownloadQueue(r.image_urls.square_medium);
-                        }
+                          foreach (var r in resultList)
+                          {
+                              AddToDownloadQueue(r.image_urls.square_medium);
+                          }
                     });
                 }
             });
 
-            //todo 改为等待 taskqueue
-            await Task.Delay(100000);
+            await _taskQueue.WaitAll();//让主线程等待所有任务完成
         }
 
-        private static IAsyncEnumerable<IEnumerable<Illusts>> SearchThenTakeHighlyBookmark(string keyword, int bookmarkLimit, int takeCount, int maxCalledCount = 30)
+        private static IAsyncEnumerable<IEnumerable<Illusts>> Search(string keyword, int bookmarkLimit, int takeCount, int maxCalledCount = 30)
         {
             return new AsyncEnumerable<IEnumerable<Illusts>>(async yield =>
             {
@@ -95,7 +94,6 @@ namespace PixivDownloader
             });
             async Task<IEnumerable<Illusts>> DoGetRelated(int illustId)
             {
-                Console.WriteLine("relate call");
                 var relateRseult = await _pixivApiClient.IllustRelated(illustId);
                 if (relateRseult?.illusts != null)
                 {
@@ -107,27 +105,20 @@ namespace PixivDownloader
             }
         }
 
-        //好坑啊 tododododo
+
+        private static IAsyncEnumerable<IEnumerable<Illusts>> UnWrapRecursGetRelated(IEnumerable<Illusts> illusts, int bookmarkLimit, int deep)
+        {
+            return RecursGetRelated(illusts, bookmarkLimit, deep).Result;
+        }
+
         private static async Task<IAsyncEnumerable<IEnumerable<Illusts>>> RecursGetRelated(IEnumerable<Illusts> illusts, int bookmarkLimit, int deep)
         {
             var result = GetRelated(illusts, bookmarkLimit);
             if (deep > 0)
             {
-                illusts = (await result.ToListAsync()).SelectMany(x => x);
+                illusts = (await result.ParallelToListAsync()).SelectMany(x => x);
                 illusts = illusts.GroupBy(x => x.id).Select(x => x.First());//distinct
-                try
-                {
-                    var tmpIllusts = new List<Illusts>();
-                    await (await RecursGetRelated(illusts, bookmarkLimit, --deep)).ParallelForEachAsync(async (x)=> {
-                        tmpIllusts.AddRange(x);
-                    });
-                    var illustList = illusts.ToList();
-                    illustList.AddRange(tmpIllusts);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine(ex);
-                }
+                result = await RecursGetRelated(illusts, bookmarkLimit, --deep);
             }
             return new AsyncEnumerable<IEnumerable<Illusts>>(async yield =>
             {

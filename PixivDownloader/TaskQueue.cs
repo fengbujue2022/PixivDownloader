@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 
 namespace PixivDownloader
@@ -51,6 +52,24 @@ namespace PixivDownloader
                     }
                 }
             };
+        }
+
+        public Task WaitAll()
+        {
+            var taskBuilder = new AsyncTaskMethodBuilder();
+            var task = taskBuilder.Task;
+            Task.Run(async () => {
+                while (true)
+                {
+                    if (_waitingQueue.Count == 0 && _associatedParallelizationCount == 0)
+                    {
+                        taskBuilder.SetResult();
+                        break;
+                    }
+                    await Task.Delay(1000);
+                }
+            });
+            return task;
         }
     }
 
