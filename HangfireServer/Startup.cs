@@ -37,7 +37,7 @@ namespace HangfireServer
             services.AddSingleton<PixivApiClientFactory>((provider) =>
             {
                 return new PixivApiClientFactory(
-                    Configuration.GetValue<string>("Username"),
+                    Configuration.GetValue<string>("PUsername"),
                     Configuration.GetValue<string>("Password"));
             });
             services.AddTransient<IPixivApiClient>((provider) =>
