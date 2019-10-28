@@ -1,15 +1,13 @@
 ﻿using Dasync.Collections;
-using System;
 using System.Collections.Generic;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace PixivDownloader
+namespace HangfireServer
 {
     public static class IAsyncEnumerableExtensions
     {
-        public static async Task<List<T>> ParallelToListAsync<T>(this IAsyncEnumerable<T> source, CancellationToken cancellationToken = default)
+        public static async Task<List<T>> ParallelToListAsync<T>(this Dasync.Collections.IAsyncEnumerable<T> source, CancellationToken cancellationToken = default(CancellationToken))
         {
             var resultList = new List<T>();
             await source.ParallelForEachAsync(async (item) => {

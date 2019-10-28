@@ -1,33 +1,40 @@
-﻿using Dasync.Collections;
-using PixivApi;
-using PixivApi.Api;
-using PixivApi.Model.Response;
-using PixivApi.OAuth;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Net.Http;
-using System.Threading;
 using System.Threading.Tasks;
+using Dasync.Collections;
+using Hangfire;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using PixivApi.Api;
+using PixivApi.Model.Response;
 
-namespace PixivDownloader
+// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+
+namespace HangfireServer
 {
-    class Program
+    [Route("jobs")]
+    public class JobsController : Controller
     {
-        //configurable for yourself
-        private static readonly string Username = "";
-        private static readonly string Password = "";
-        private static readonly string DownloadDir = @"C:\Pixiv3";
+        private readonly IPixivApiClient _pixivApiClient;
+        private readonly IConfiguration _configuration;
+        private readonly IHostingEnvironment _hostingEnvironment;
 
-        private static readonly PixivApiClientFactory _factory = new PixivApiClientFactory(Username, Password, new TextFileAuthStore(), TimeSpan.FromSeconds(15));
-        private static readonly IPixivApiClient _pixivApiClient = _factory.Create<IPixivApiClient>();
-        private static readonly TaskQueue _taskQueue = new TaskQueue(20);
-
-        private static object _syncObject = new object();
-
-        static async Task Main(string[] args)
+        public JobsController(IPixivApiClient pixivApiClient, IConfiguration configuration, IHostingEnvironment hostingEnvironment)
         {
+            _pixivApiClient = pixivApiClient;
+            _configuration = configuration;
+            _hostingEnvironment = hostingEnvironment;
+        }
+
+        [HttpGet, Route("run")]
+        public async Task<string> Run(string keyword = "Arknights")
+        {
+            //create directory
+            GetDownloadFolderPath();
+
             await Search(
                 keyword: "Arknights",
                 bookmarkLimit: 1000,
@@ -38,18 +45,18 @@ namespace PixivDownloader
                 {
                     await UnWrapRecursGetRelated(illusts, bookmarkLimit: 1000, deep: 2).ParallelForEachAsync(async resultList =>
                     {
-                          foreach (var r in resultList)
-                          {
-                              AddToDownloadQueue(r.image_urls.square_medium);
-                          }
+                        foreach (var r in resultList)
+                        {
+                            BackgroundJob.Enqueue(() => Download(r.image_urls.square_medium, $"{r.title}-{r.id}"));
+                        }
                     });
                 }
             });
 
-            await _taskQueue.WaitAll();//让主线程等待所有任务完成
+            return "下载任务已添加到hangfire, 访问 https://localhost:5001/hangfire 查看";
         }
 
-        private static IAsyncEnumerable<IEnumerable<Illusts>> Search(string keyword, int bookmarkLimit, int takeCount, int maxCalledCount = 30)
+        private Dasync.Collections.IAsyncEnumerable<IEnumerable<Illusts>> Search(string keyword, int bookmarkLimit, int takeCount, int maxCalledCount = 30)
         {
             return new AsyncEnumerable<IEnumerable<Illusts>>(async yield =>
             {
@@ -82,7 +89,7 @@ namespace PixivDownloader
             }
         }
 
-        private static IAsyncEnumerable<IEnumerable<Illusts>> GetRelated(IEnumerable<Illusts> illusts, int bookmarkLimit)
+        private Dasync.Collections.IAsyncEnumerable<IEnumerable<Illusts>> GetRelated(IEnumerable<Illusts> illusts, int bookmarkLimit)
         {
             return new AsyncEnumerable<IEnumerable<Illusts>>(async yield =>
             {
@@ -105,12 +112,12 @@ namespace PixivDownloader
             }
         }
 
-        private static IAsyncEnumerable<IEnumerable<Illusts>> UnWrapRecursGetRelated(IEnumerable<Illusts> illusts, int bookmarkLimit, int deep)
+        private Dasync.Collections.IAsyncEnumerable<IEnumerable<Illusts>> UnWrapRecursGetRelated(IEnumerable<Illusts> illusts, int bookmarkLimit, int deep)
         {
             return RecursGetRelated(illusts, bookmarkLimit, deep).Result;
         }
 
-        private static async Task<IAsyncEnumerable<IEnumerable<Illusts>>> RecursGetRelated(IEnumerable<Illusts> illusts, int bookmarkLimit, int deep)
+        private async Task<Dasync.Collections.IAsyncEnumerable<IEnumerable<Illusts>>> RecursGetRelated(IEnumerable<Illusts> illusts, int bookmarkLimit, int deep)
         {
             var result = GetRelated(illusts, bookmarkLimit);
             if (deep > 0)
@@ -128,49 +135,37 @@ namespace PixivDownloader
             });
         }
 
-        private static void AddToDownloadQueue(string url)
+        [NonAction]
+        public async Task Download(string url, string fileName = null)
         {
-            _taskQueue.Queue(async () => await Download(url));
-        }
+            var path = GetDownloadFolderPath();
 
-        private static async Task Download(string url)
-        {
-            //1. Check directory
-            if (!Directory.Exists(DownloadDir))
-                Directory.CreateDirectory(DownloadDir);
+            fileName = fileName == null ? url.Split('/').Last() : $"{fileName}.{Path.GetExtension(url.Split('/').Last())}";
+            var finalPath = Path.Combine(path, fileName);
 
-            //2. Create file
-            FileStream fs = null;
-            var finalPath = Path.Combine(DownloadDir, ResolveFileName());
-            if (!File.Exists(finalPath))
+            var response = await _pixivApiClient.Download(url);
+            if (response.ContentHeaders.ContentType != null && response.ContentHeaders.ContentType.MediaType.Contains("image"))
             {
-                lock (_syncObject)
+                using (var fileStream = new FileStream(finalPath, FileMode.OpenOrCreate))
                 {
-                    if (!File.Exists(finalPath))
-                    {
-                        fs = new FileStream(finalPath, FileMode.CreateNew);
-                    }
+                    await response.Content.CopyToAsync(fileStream);
                 }
             }
-
-            //3. Copy stream
-            if (fs != null)
-            {
-                var response = await _pixivApiClient.Download(url);
-                if (response.ContentHeaders.ContentType != null && response.ContentHeaders.ContentType.MediaType.Contains("image"))
-                {
-                    using (fs)
-                    {
-                        await response.Content.CopyToAsync(fs);
-                    }
-                }
-            }
-
-            string ResolveFileName()
-            {
-                return url.Split('/').Last(); ;
-            }
         }
+
+        private string GetDownloadFolderPath()
+        {
+            var folder = _configuration.GetValue<string>("DowloadFolder");
+            string path;
+            if (Path.IsPathFullyQualified(folder))
+                path = folder;
+            else
+                path = Path.Combine(_hostingEnvironment.ContentRootPath, folder);
+
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+            return path;
+        }
+
     }
-
 }

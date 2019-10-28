@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.645
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PixivDownloader", "PixivDownloader\PixivDownloader.csproj", "{7665008C-63B5-4A86-A83C-E4E1A2C96F9B}"
-EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SubModule", "SubModule", "{B8B1E785-065E-42F2-AFE4-F06040D6EF2E}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PixivApi", "PixivApi\PixivApi\PixivApi.csproj", "{BC5E350D-B680-44C5-9163-339240CB3782}"
@@ -13,16 +11,14 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "EasyHttpClient", "PixivApi\
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SimpleHttpClient", "PixivApi\SimpleHttpClient\SimpleHttpClient\SimpleHttpClient.csproj", "{1783645D-87F6-45C9-A2BA-8A3E211086B4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HangfireServer", "HangfireServer\HangfireServer.csproj", "{14D59468-63AA-4789-BDD1-9B54241FFFD8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{7665008C-63B5-4A86-A83C-E4E1A2C96F9B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7665008C-63B5-4A86-A83C-E4E1A2C96F9B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7665008C-63B5-4A86-A83C-E4E1A2C96F9B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7665008C-63B5-4A86-A83C-E4E1A2C96F9B}.Release|Any CPU.Build.0 = Release|Any CPU
 		{BC5E350D-B680-44C5-9163-339240CB3782}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{BC5E350D-B680-44C5-9163-339240CB3782}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{BC5E350D-B680-44C5-9163-339240CB3782}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -35,6 +31,10 @@ Global
 		{1783645D-87F6-45C9-A2BA-8A3E211086B4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{1783645D-87F6-45C9-A2BA-8A3E211086B4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{1783645D-87F6-45C9-A2BA-8A3E211086B4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{14D59468-63AA-4789-BDD1-9B54241FFFD8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{14D59468-63AA-4789-BDD1-9B54241FFFD8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{14D59468-63AA-4789-BDD1-9B54241FFFD8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{14D59468-63AA-4789-BDD1-9B54241FFFD8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
