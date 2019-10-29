@@ -8,8 +8,9 @@ using Hangfire;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
-using PixivApi.Api;
-using PixivApi.Model.Response;
+using PixivApi.Net.API;
+using PixivApi.Net.Model.Response;
+
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -36,7 +37,7 @@ namespace HangfireServer
             GetDownloadFolderPath();
 
             await Search(
-                keyword: "Arknights",
+                keyword: keyword,
                 bookmarkLimit: 1000,
                 takeCount: 10)
             .ParallelForEachAsync(async (illusts) =>
@@ -47,13 +48,22 @@ namespace HangfireServer
                     {
                         foreach (var r in resultList)
                         {
-                            BackgroundJob.Enqueue(() => Download(r.image_urls.square_medium, $"{r.title}-{r.id}"));
+                            string imageUrl;
+                            if (!string.IsNullOrWhiteSpace(r.meta_single_page.original_image_url))
+                            {
+                                imageUrl = r.meta_single_page.original_image_url;
+                            }
+                            else
+                            {
+                                imageUrl = r.image_urls.large;
+                            }
+                            BackgroundJob.Enqueue(() => Download(imageUrl, $"{r.id}"));
                         }
                     });
                 }
             });
 
-            return "下载任务已添加到hangfire, 访问 https://localhost:5001/hangfire 查看";
+            return "All download jobs have enqueued, access https://localhost:5001/hangfire to view more info";
         }
 
         private Dasync.Collections.IAsyncEnumerable<IEnumerable<Illusts>> Search(string keyword, int bookmarkLimit, int takeCount, int maxCalledCount = 30)

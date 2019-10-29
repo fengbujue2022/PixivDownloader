@@ -17,7 +17,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\PixivApi\PixivApi\PixivApi.csproj" />
+    <ProjectReference Include="..\PixivApi\PixivApi.Net\PixivApi.Net.csproj" />
   </ItemGroup>
 
 </Project>

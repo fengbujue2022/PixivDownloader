@@ -11,8 +11,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using PixivApi;
-using PixivApi.Api;
+using PixivApi.Net;
+using PixivApi.Net.API;
 
 namespace HangfireServer
 {
