@@ -17,8 +17,10 @@ using PixivApi.Net.Model.Response;
 namespace HangfireServer
 {
     [Route("jobs")]
-    public class JobsController : Controller
+    public class JobsController : ControllerBase
     {
+        private static readonly List<string> EnqueuedFileNames = new List<string>();
+
         private readonly IPixivApiClient _pixivApiClient;
         private readonly IConfiguration _configuration;
         private readonly IHostingEnvironment _hostingEnvironment;
@@ -62,7 +64,6 @@ namespace HangfireServer
                     });
                 }
             });
-
             return "All download jobs have enqueued, access https://localhost:5001/hangfire to view more info";
         }
 
@@ -148,10 +149,16 @@ namespace HangfireServer
         [NonAction]
         public async Task Download(string url, string fileName = null)
         {
+            if (EnqueueFileName(fileName) == false)
+                return;
+
             var path = GetDownloadFolderPath();
 
             fileName = fileName == null ? url.Split('/').Last() : $"{fileName}.{Path.GetExtension(url.Split('/').Last())}";
             var finalPath = Path.Combine(path, fileName);
+
+            if (System.IO.File.Exists(finalPath) == true)
+                return;
 
             var response = await _pixivApiClient.Download(url);
             if (response.ContentHeaders.ContentType != null && response.ContentHeaders.ContentType.MediaType.Contains("image"))
@@ -177,5 +184,21 @@ namespace HangfireServer
             return path;
         }
 
+        private bool EnqueueFileName(string name)
+        {
+            var exists = true;
+            if (EnqueuedFileNames.IndexOf(name) < 0)
+            {
+                lock (EnqueuedFileNames)
+                {
+                    if (EnqueuedFileNames.IndexOf(name) < 0)
+                    {
+                        exists = false;
+                        EnqueuedFileNames.Add(name);
+                    }
+                }
+            }
+            return !exists;
+        }
     }
 }

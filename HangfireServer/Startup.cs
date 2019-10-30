@@ -53,7 +53,10 @@ namespace HangfireServer
                 app.UseDeveloperExceptionPage();
             }
             app.UseHangfireDashboard();
-            app.UseHangfireServer(new BackgroundJobServerOptions() { WorkerCount = Configuration.GetValue<int>("WorkerCount") });
+            app.UseHangfireServer(new BackgroundJobServerOptions()
+            {
+                WorkerCount = Configuration.GetValue<int>("WorkerCount")
+            });
             app.UseMvc();
         }
     }
