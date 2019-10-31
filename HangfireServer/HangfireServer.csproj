@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <PackageReference Include="AsyncEnumerator" Version="3.1.0" />
+    <PackageReference Include="ConcurrentHashSet" Version="1.1.0" />
     <PackageReference Include="Hangfire" Version="1.6.13" />
     <PackageReference Include="Hangfire.MemoryStorage" Version="1.6.3" />
     <PackageReference Include="Microsoft.AspNetCore.App" />
