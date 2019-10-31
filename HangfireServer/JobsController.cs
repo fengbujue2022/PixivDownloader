@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using ConcurrentCollections;
 using Dasync.Collections;
 using Hangfire;
 using Microsoft.AspNetCore.Hosting;
@@ -19,7 +20,7 @@ namespace HangfireServer
     [Route("jobs")]
     public class JobsController : ControllerBase
     {
-        private static readonly List<string> EnqueuedFileNames = new List<string>();
+        private static readonly ConcurrentHashSet<string> EnqueuedFileNames = new ConcurrentHashSet<string>();
 
         private readonly IPixivApiClient _pixivApiClient;
         private readonly IConfiguration _configuration;
@@ -149,7 +150,7 @@ namespace HangfireServer
         [NonAction]
         public async Task Download(string url, string fileName = null)
         {
-            if (EnqueueFileName(fileName) == false)
+            if (EnqueuedFileNames.Add(fileName) == false)
                 return;
 
             var path = GetDownloadFolderPath();
@@ -182,23 +183,6 @@ namespace HangfireServer
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
             return path;
-        }
-
-        private bool EnqueueFileName(string name)
-        {
-            var exists = true;
-            if (EnqueuedFileNames.IndexOf(name) < 0)
-            {
-                lock (EnqueuedFileNames)
-                {
-                    if (EnqueuedFileNames.IndexOf(name) < 0)
-                    {
-                        exists = false;
-                        EnqueuedFileNames.Add(name);
-                    }
-                }
-            }
-            return !exists;
         }
     }
 }
