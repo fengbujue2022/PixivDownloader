@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Hangfire;
 using Hangfire.MemoryStorage;
+using HangfireServer.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -33,18 +34,13 @@ namespace HangfireServer
             {
                 config.UseMemoryStorage();
             });
-            //pixiv api
-            services.AddSingleton<PixivApiClientFactory>((provider) =>
-            {
-                return new PixivApiClientFactory(
-                    Configuration.GetValue<string>("PUsername"),
-                    Configuration.GetValue<string>("Password"));
-            });
-            services.AddTransient<IPixivApiClient>((provider) =>
-            {
-                return provider.GetService<PixivApiClientFactory>().Create<IPixivApiClient>();
-            });
+
+            services
+                .AddServices()
+                .AddRateLimiter(Configuration)
+                .AddPixivApi(Configuration);
         }
+
 
         public void Configure(IApplicationBuilder app, Microsoft.AspNetCore.Hosting.IHostingEnvironment env)
         {
