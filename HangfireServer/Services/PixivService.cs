@@ -7,8 +7,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Threading.Tasks;
-using ComposableAsync;
 using System.Diagnostics;
 
 namespace HangfireServer.Services
@@ -16,12 +14,10 @@ namespace HangfireServer.Services
     public class PixivService : IService
     {
         private readonly IPixivApiClient _pixivApiClient;
-        private readonly TimeLimiter _timeLimiter;
 
-        public PixivService(IPixivApiClient pixivApiClient, TimeLimiter timeLimiter)
+        public PixivService(IPixivApiClient pixivApiClient)
         {
             _pixivApiClient = pixivApiClient;
-            _timeLimiter = timeLimiter;
         }
 
         public Dasync.Collections.IAsyncEnumerable<IEnumerable<Illusts>> BatchSearch(string keyword, Func<Illusts, bool> predicate, int rows)
@@ -31,7 +27,6 @@ namespace HangfireServer.Services
                 var stack = new ConcurrentStack<int>(Enumerable.Range(0, rows));
                 while (stack.TryPop(out var index))
                 {
-                    await _timeLimiter;
                     var searchResult = await _pixivApiClient.SearchIllust(keyword, offset: index * 30);
                     Trace.WriteLine("search on called");
                     searchResult.illusts = searchResult.illusts.Where(predicate).ToList();
@@ -50,7 +45,6 @@ namespace HangfireServer.Services
             {
                 foreach (var illustd in illusts)
                 {
-                    await _timeLimiter;
                     var relateRseult = await _pixivApiClient.IllustRelated(illustd.id);
                     Trace.WriteLine("relate on called");
                     relateRseult.illusts = relateRseult.illusts.Where(predicate).ToList();

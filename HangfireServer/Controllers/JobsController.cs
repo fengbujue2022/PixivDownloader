@@ -60,11 +60,15 @@ namespace HangfireServer
         }
 
         [NonAction]
-        public async Task Download(string url, string fileName = null)
+        public Task Download(string url)
+        {
+            return Download(url, url.Split('/').Last());
+        }
+
+        [NonAction]
+        public async Task Download(string url, string fileName)
         {
             var path = GetDownloadFolder();
-
-            fileName = fileName == null ? url.Split('/').Last() : $"{fileName}.{Path.GetExtension(url.Split('/').Last())}";
             var finalPath = Path.Combine(path, fileName);
 
             if (System.IO.File.Exists(finalPath) == true)
@@ -82,7 +86,7 @@ namespace HangfireServer
 
         private void EnqueueToDownload(Illusts illusts)
         {
-            var filename = $"{illusts.id}";
+            var filename = $"{illusts.id}.{Path.GetExtension(illusts.image_urls.large)}";
 
             if (_configuration.GetValue<bool>("EnableRatioFilter")
                 &&
