@@ -1,4 +1,4 @@
-﻿using HangfireServer.Code;
+﻿using Downloader.Core.Code;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using PixivApi.Net;
@@ -9,13 +9,21 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
-namespace HangfireServer.Extensions
+namespace Downloader.Core.Extensions
 {
     public static class ServiceCollectionExtension
     {
-        public static IServiceCollection AddServices(this IServiceCollection services)
+        public static IServiceCollection AddPixivDownloader(this IServiceCollection services, IConfiguration configuration)
         {
-            var serviceTypes = typeof(Startup).Assembly.GetTypes().Where(t => typeof(Services.IService).IsAssignableFrom(t) && !t.IsInterface);
+            return services
+                .AddServices()
+                .AddPixivApi(configuration)
+                .AddRateLimiter(configuration);
+        }
+
+        private static IServiceCollection AddServices(this IServiceCollection services)
+        {
+            var serviceTypes = typeof(Services.IService).Assembly.GetTypes().Where(t => typeof(Services.IService).IsAssignableFrom(t) && !t.IsInterface);
             foreach (var t in serviceTypes)
             {
                 services.AddScoped(t);
@@ -23,7 +31,7 @@ namespace HangfireServer.Extensions
             return services;
         }
 
-        public static IServiceCollection AddPixivApi(this IServiceCollection services, IConfiguration configuration)
+        private static IServiceCollection AddPixivApi(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddSingleton((provider) =>
             {
@@ -42,7 +50,7 @@ namespace HangfireServer.Extensions
             return services;
         }
 
-        public static IServiceCollection AddRateLimiter(this IServiceCollection services, IConfiguration configuration)
+        private static IServiceCollection AddRateLimiter(this IServiceCollection services, IConfiguration configuration)
         {
             services.AddSingleton(x => TimeLimiter.GetFromMaxCountByInterval(configuration.GetValue<int>("RateLimitPerCount"), TimeSpan.FromSeconds(configuration.GetValue<int>("RateLimitPerSecond"))));
             return services;

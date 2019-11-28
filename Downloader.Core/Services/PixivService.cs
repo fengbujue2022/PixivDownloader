@@ -8,16 +8,28 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Diagnostics;
+using System.Threading.Tasks;
+using System.IO;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.Configuration;
+using Hangfire;
+using ConcurrentCollections;
 
-namespace HangfireServer.Services
+namespace Downloader.Core.Services
 {
     public class PixivService : IService
     {
-        private readonly IPixivApiClient _pixivApiClient;
+        private static readonly ConcurrentHashSet<string> EnqueuedFileNames = new ConcurrentHashSet<string>();
 
-        public PixivService(IPixivApiClient pixivApiClient)
+        private readonly IPixivApiClient _pixivApiClient;
+        private readonly IConfiguration _configuration;
+        private readonly IHostingEnvironment _hostingEnvironment;
+
+        public PixivService(IPixivApiClient pixivApiClient, IConfiguration configuration, IHostingEnvironment hostingEnvironment)
         {
             _pixivApiClient = pixivApiClient;
+            _configuration = configuration;
+            _hostingEnvironment = hostingEnvironment;
         }
 
         public Dasync.Collections.IAsyncEnumerable<IEnumerable<Illusts>> BatchSearch(string keyword, Func<Illusts, bool> predicate, int rows)
@@ -37,7 +49,6 @@ namespace HangfireServer.Services
                 }
             });
         }
-
 
         public Dasync.Collections.IAsyncEnumerable<IEnumerable<Illusts>> GetRelated(IEnumerable<Illusts> illusts, Func<Illusts, bool> predicate)
         {
@@ -74,5 +85,57 @@ namespace HangfireServer.Services
             });
         }
 
+        public void EnqueueToDownload(Illusts illusts)
+        {
+            var filename = $"{illusts.id}.{Path.GetExtension(illusts.image_urls.large)}";
+
+            if (_configuration.GetValue<bool>("EnableRatioFilter")
+                &&
+                (FilterRule.RatioH(illusts) || FilterRule.RatioH(illusts)) == false)
+                return;
+
+            if (EnqueuedFileNames.Add(filename) == false)
+                return;
+
+            var imageUrl = !string.IsNullOrWhiteSpace(illusts.meta_single_page.original_image_url) ? illusts.meta_single_page.original_image_url : illusts.image_urls.large;
+            BackgroundJob.Enqueue(() => Download(imageUrl, filename));
+        }
+
+        public Task Download(string url)
+        {
+            return Download(url, url.Split('/').Last());
+        }
+
+        public async Task Download(string url, string fileName)
+        {
+            var path = GetDownloadFolder();
+            var finalPath = Path.Combine(path, fileName);
+
+            if (System.IO.File.Exists(finalPath) == true)
+                return;
+
+            var response = await _pixivApiClient.Download(url);
+            if (response.ContentHeaders.ContentType != null && response.ContentHeaders.ContentType.MediaType.Contains("image"))
+            {
+                using (var fileStream = new FileStream(finalPath, FileMode.OpenOrCreate))
+                {
+                    await response.Content.CopyToAsync(fileStream);
+                }
+            }
+        }
+
+        private string GetDownloadFolder()
+        {
+            var folder = _configuration.GetValue<string>("DowloadFolder");
+            string path;
+            if (Path.IsPathFullyQualified(folder))
+                path = folder;
+            else
+                path = Path.Combine(_hostingEnvironment.ContentRootPath, folder);
+
+            if (!Directory.Exists(path))
+                Directory.CreateDirectory(path);
+            return path;
+        }
     }
 }

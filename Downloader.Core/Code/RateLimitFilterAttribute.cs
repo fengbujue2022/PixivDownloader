@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 using ComposableAsync;
 using EasyHttpClient;
 
-namespace HangfireServer.Code
+namespace Downloader.Core.Code
 {
     public class RateLimitFilterAttribute : ActionFilterAttribute
     {

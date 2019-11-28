@@ -2,3 +2,6 @@
 HangfireServer/obj/
 HangfireServer/bin/
 HangfireServer/PixivImgs/
+HangfireServer/Downloads/
+Downloader.Core/bin/
+Downloader.Core/obj/

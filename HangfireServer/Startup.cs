@@ -4,7 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Hangfire;
 using Hangfire.MemoryStorage;
-using HangfireServer.Extensions;
+using Downloader.Core.Extensions;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http;
@@ -35,10 +35,7 @@ namespace HangfireServer
                 config.UseMemoryStorage();
             });
 
-            services
-                .AddServices()
-                .AddRateLimiter(Configuration)
-                .AddPixivApi(Configuration);
+            services.AddPixivDownloader(Configuration);
         }
 
 
