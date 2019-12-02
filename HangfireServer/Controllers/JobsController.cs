@@ -24,8 +24,14 @@ namespace HangfireServer
         {
             if (useAutocomplate)
             {
-                var tips = await _pixivApiClient.SearchAutocomplete(keyword);
-                keyword = tips?.tags != null && !tips.tags.Any() ? tips.tags.First().translated_name : keyword;
+                var suggestionKeyword = await _pixivApiClient.SearchAutocomplete(keyword);
+                if (suggestionKeyword.tags != null && suggestionKeyword.tags.Any())
+                {
+                    keyword =
+                        suggestionKeyword.tags.FirstOrDefault(x => !string.IsNullOrEmpty(x.translated_name))?.translated_name
+                        ??
+                        suggestionKeyword.tags.FirstOrDefault(x => !string.IsNullOrEmpty(x.name))?.name;
+                }
             }
             await _pixivService.BatchSearch(keyword, FilterRule.Bookmark1, 20).ForEachAsync(async (illusts) =>
             {
