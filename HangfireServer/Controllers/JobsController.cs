@@ -30,7 +30,9 @@ namespace HangfireServer
                     keyword =
                         suggestionKeyword.tags.FirstOrDefault(x => !string.IsNullOrEmpty(x.translated_name))?.translated_name
                         ??
-                        suggestionKeyword.tags.FirstOrDefault(x => !string.IsNullOrEmpty(x.name))?.name;
+                        suggestionKeyword.tags.FirstOrDefault(x => !string.IsNullOrEmpty(x.name))?.name
+                        ??
+                        keyword;
                 }
             }
             await _pixivService.BatchSearch(keyword, FilterRule.Bookmark1, 20).ForEachAsync(async (illusts) =>
