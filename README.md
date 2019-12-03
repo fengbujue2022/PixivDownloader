@@ -1,5 +1,5 @@
 # PixivDownloader
-无需代理 下载p站图片
+无需代理 下载p站(pixiv)图片
 
 #### 如何使用
 1. 递归克隆此项目 `git clone --recursive https://github.com/Feng-Bu-Jue/PixivDownloader.git`
