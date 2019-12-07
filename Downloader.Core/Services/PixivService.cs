@@ -40,7 +40,7 @@ namespace Downloader.Core.Services
                 while (stack.TryPop(out var index))
                 {
                     var searchResult = await _pixivApiClient.SearchIllust(keyword, offset: index * 30);
-                    Trace.WriteLine("search on called");
+                    Trace.WriteLine("The search calling on");
                     searchResult.illusts = searchResult.illusts.Where(predicate).ToList();
                     if (searchResult.illusts.Any())
                     {
@@ -57,7 +57,7 @@ namespace Downloader.Core.Services
                 foreach (var illustd in illusts)
                 {
                     var relateRseult = await _pixivApiClient.IllustRelated(illustd.id);
-                    Trace.WriteLine("relate on called");
+                    Trace.WriteLine("The releated calling on");
                     relateRseult.illusts = relateRseult.illusts.Where(predicate).ToList();
                     if (relateRseult.illusts.Any())
                     {
@@ -85,7 +85,7 @@ namespace Downloader.Core.Services
             });
         }
 
-        public void EnqueueToDownload(Illusts illusts)
+        public void EnqueueToDownload(string keyword, Illusts illusts)
         {
             var filename = $"{illusts.id}.{Path.GetExtension(illusts.image_urls.large)}";
 
@@ -98,17 +98,17 @@ namespace Downloader.Core.Services
                 return;
 
             var imageUrl = !string.IsNullOrWhiteSpace(illusts.meta_single_page.original_image_url) ? illusts.meta_single_page.original_image_url : illusts.image_urls.large;
-            BackgroundJob.Enqueue(() => Download(imageUrl, filename));
+            BackgroundJob.Enqueue(() => Download(keyword, imageUrl, filename));
         }
 
-        public Task Download(string url)
+        public Task Download(string keyword, string url)
         {
             return Download(url, url.Split('/').Last());
         }
 
-        public async Task Download(string url, string fileName)
+        public async Task Download(string keyword, string url, string fileName)
         {
-            var path = GetDownloadFolder();
+            var path = GetDownloadFolder(keyword);
             var finalPath = Path.Combine(path, fileName);
 
             if (System.IO.File.Exists(finalPath) == true)
@@ -124,14 +124,14 @@ namespace Downloader.Core.Services
             }
         }
 
-        private string GetDownloadFolder()
+        private string GetDownloadFolder(string keyword)
         {
             var folder = _configuration.GetValue<string>("DowloadFolder");
             string path;
             if (Path.IsPathFullyQualified(folder))
-                path = folder;
+                path = Path.Combine(folder, keyword);
             else
-                path = Path.Combine(_hostingEnvironment.ContentRootPath, folder);
+                path = Path.Combine(_hostingEnvironment.ContentRootPath, folder, keyword);
 
             if (!Directory.Exists(path))
                 Directory.CreateDirectory(path);
