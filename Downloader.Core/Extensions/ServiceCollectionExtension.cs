@@ -38,6 +38,7 @@ namespace Downloader.Core.Extensions
                 return new PixivApiClientFactory(
                     configuration.GetValue<string>("PUsername"),
                     configuration.GetValue<string>("Password"),
+                    configuration.GetValue<bool>("EnableDirectConnect"),
                     config =>
                     {
                         config.HttpClientSettings.ActionFilters.Add(new RateLimitFilterAttribute(provider.GetService<TimeLimiter>()));
